@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: faceid_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: faceid
+      POSTGRES_PASSWORD: faceid
+      POSTGRES_DB: faceid_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - faceid_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U faceid -d faceid_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    container_name: faceid_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://faceid:faceid@postgres:5432/faceid_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+volumes:
+  faceid_pg_data:

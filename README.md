@@ -1,70 +1,52 @@
-# Face ID MVP — Backend Foundation
+# Face ID MVP
 
-Real-time face recognition pipeline: webcam → detection → embedding → FAISS search → Postgres lookup.
-This stage sets up the **foundation**: config, database layer, and a FastAPI app that boots and talks to Postgres.
-Next stages add the ML pipeline (`core/`) and the enroll/recognize/stream endpoints (`api/`).
+A simple full-stack face recognition demo built with React, FastAPI, PostgreSQL, and FAISS.
 
-## Run it
+## What it does
 
-### 1. Start Postgres (Docker)
+- enrolls a person from an uploaded image
+- recognizes a person from a photo upload
+- streams webcam frames for live recognition
+- stores person metadata in PostgreSQL
+- stores face embeddings in FAISS
+- logs recognition outcomes
+
+## Main stack
+
+- Frontend: React + Vite
+- Backend: FastAPI + Uvicorn
+- Database: PostgreSQL + SQLAlchemy
+- AI/CV: OpenCV + InsightFace + ONNX Runtime + NumPy
+- Vector search: FAISS
+- Container setup: Docker Compose
+
+## Main API endpoints
+
+- `GET /health`
+- `POST /enroll`
+- `POST /recognize/image`
+- `WebSocket /ws/recognize`
+
+## Run it locally
+
 ```bash
 docker compose up -d postgres
-```
-
-### 2. Set up the backend locally (recommended while iterating)
-```bash
 cd backend
-cp .env.example .env
-python -m venv venv && source venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-```
-
-### 3. Run the API
-```bash
 uvicorn main:app --reload --port 8000
 ```
 
-### 4. Confirm it's alive
+Then start the frontend:
+
 ```bash
-curl http://localhost:8000/health
-```
-Expected:
-```json
-{"status": "ok", "env": "development", "database": "ok"}
+cd frontend
+npm install
+npm run dev
 ```
 
-If `database` shows an error, check that Postgres is running (`docker compose ps`) and that
-`DATABASE_URL` in `.env` matches the credentials in `docker-compose.yml`.
+## Notes
 
-## What exists so far
+This is a demo MVP, not a production biometric system. It is good for learning, prototyping, and small-scale face matching, but it is not built for huge-scale identity deployment yet.
 
-| Piece | File | Status |
-|---|---|---|
-| Config | `config.py` | ✅ |
-| DB engine/session | `db/database.py` | ✅ |
-| ORM models (`Person`, `RecognitionLog`) | `db/models.py` | ✅ |
-| CRUD helpers | `db/crud.py` | ✅ |
-| FastAPI app + health check | `main.py` | ✅ |
-| Face detector/embedder | `core/` | ⏳ next |
-| FAISS index manager | `faiss_index/` | ⏳ next |
-| Enroll / Recognize / Stream endpoints | `api/` | ⏳ next |
-| React dashboard | `frontend/` | ⏳ later |
-
-## Full architecture
-
-```
-Camera → Face Detection → Face Alignment → Face Embedding (512-d) → FAISS Search
-                                                                          │
-                                                              ┌───────────┴───────────┐
-                                                              ▼                       ▼
-                                                     Candidate Matches       Similarity Scores
-                                                              │
-                                                              ▼
-                                                     Best Match Selected
-                                                              │
-                                                              ▼
-                                                  faiss_position → PostgreSQL
-                                                              │
-                                                              ▼
-                                                       Person Record
-```
