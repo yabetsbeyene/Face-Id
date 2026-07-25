@@ -16,6 +16,10 @@ insightface==0.7.3
 onnxruntime==1.18.0
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
+Pillow>=10,<12
+pillow-heif>=0.18,<2
+pillow-avif-plugin>=1.4,<2
+CairoSVG>=2.7,<3
 
 # Vector search
 faiss-cpu==1.8.0

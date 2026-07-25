@@ -2,6 +2,7 @@
 Async database engine + session factory.
 We use asyncpg under the hood so FastAPI request handlers stay non-blocking.
 """
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
@@ -32,3 +33,8 @@ async def init_db():
     """Create tables on startup if they don't exist yet (fine for a hackathon; use Alembic for prod)."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Lightweight development migration for databases created before
+        # per-person email alerts were introduced.
+        await conn.execute(
+            text("ALTER TABLE people ADD COLUMN IF NOT EXISTS alert_email VARCHAR")
+        )

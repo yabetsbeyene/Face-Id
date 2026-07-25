@@ -24,6 +24,7 @@ class Person(Base):
     full_name: Mapped[str] = mapped_column(String)
     role: Mapped[str | None] = mapped_column(String, nullable=True)  # e.g. "employee", "visitor"
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
+    alert_email: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Position of this person's embedding inside the FAISS index.
     faiss_position: Mapped[int] = mapped_column(Integer, unique=True, index=True)

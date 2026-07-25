@@ -55,6 +55,17 @@ async def health():
         "status": "ok",
         "env": settings.app_env,
         "database": db_status,
+        "email": {
+            "configured": bool(
+                settings.smtp_host
+                and settings.smtp_username
+                and settings.smtp_password
+                and settings.smtp_from_email
+            ),
+            "host": settings.smtp_host or None,
+            "from_email": settings.smtp_from_email or None,
+            "fallback_recipient": bool(settings.default_alert_email),
+        },
     }
 
 
@@ -62,8 +73,10 @@ from api.enroll import router as enroll_router
 from api.recognize import router as recognize_router
 from api.stream import router as stream_router
 from api.people import router as people_router
+from api.debug import router as debug_router
 
-app.include_router(enroll_router, prefix="/enroll", tags=["enroll"])
+app.include_router(enroll_router,    prefix="/enroll",    tags=["enroll"])
 app.include_router(recognize_router, prefix="/recognize", tags=["recognize"])
-app.include_router(stream_router, tags=["stream"])
-app.include_router(people_router, prefix="/people", tags=["people"])
+app.include_router(stream_router,    tags=["stream"])
+app.include_router(people_router,    prefix="/people",    tags=["people"])
+app.include_router(debug_router,     prefix="/debug",     tags=["debug"])

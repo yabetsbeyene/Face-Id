@@ -15,9 +15,18 @@ class PersonOut(BaseModel):
     full_name: str
     role: str | None = None
     notes: str | None = None
+    alert_email: str | None = None
     photo_url: str | None = None
     created_at: datetime.datetime
     
+
+class PersonUpdate(BaseModel):
+    person_code: str | None = None
+    full_name: str | None = None
+    role: str | None = None
+    notes: str | None = None
+    alert_email: str | None = None
+
 
 class EnrollResponse(BaseModel):
     person: PersonOut
@@ -27,6 +36,10 @@ class EnrollResponse(BaseModel):
 
 class RecognizeResponse(BaseModel):
     matched: bool
+    quality_ok: bool = True
+    quality_issues: list[str] = []
     person: PersonOut | None = None
     similarity: float
     message: str
+    email_alert_status: str | None = None
+    email_alert_recipient: str | None = None

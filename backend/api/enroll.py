@@ -8,7 +8,6 @@ the vector, + photo URL) in Postgres.
 import os
 import uuid
 
-import cv2
 import numpy as np
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.face_detector import get_detector
 from core.embedder import get_embedder
+from core.image_decode import decode_image
+from core.image_enhance import enhance_face_crop
 from db import crud
 from db.database import get_db
 from faiss_index.index_manager import get_index_manager
@@ -27,8 +28,7 @@ PEOPLE_PHOTOS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "up
 
 
 def _decode_image(raw: bytes) -> np.ndarray:
-    arr = np.frombuffer(raw, dtype=np.uint8)
-    image = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    image = decode_image(raw)
     if image is None:
         raise HTTPException(status_code=400, detail="Could not decode image file")
     return image
@@ -37,7 +37,7 @@ def _decode_image(raw: bytes) -> np.ndarray:
 def _save_photo(raw: bytes, original_filename: str | None) -> str:
     """Saves the raw uploaded bytes to disk, returns the URL path to serve it from."""
     ext = os.path.splitext(original_filename or "")[1].lower() or ".jpg"
-    if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+    if ext not in (".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".avif", ".svg"):
         ext = ".jpg"
     filename = f"{uuid.uuid4()}{ext}"
     os.makedirs(PEOPLE_PHOTOS_DIR, exist_ok=True)
@@ -53,6 +53,7 @@ async def enroll_person(
     full_name: str = Form(...),
     role: str | None = Form(None),
     notes: str | None = Form(None),
+    alert_email: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
     raw = await file.read()
@@ -64,9 +65,10 @@ async def enroll_person(
         raise HTTPException(status_code=400, detail="No face detected in the uploaded image")
 
     best_face = faces[0]
-
+    # Auto-enhance face crop so low-quality, blurry, or low-light images can be enrolled smoothly
+    enhanced_crop = enhance_face_crop(best_face.aligned_crop)
     embedder = get_embedder()
-    embedding = embedder.embed(best_face.aligned_crop)
+    embedding = embedder.embed(enhanced_crop)
 
     index_manager = get_index_manager()
     position = index_manager.add(embedding)
@@ -81,6 +83,7 @@ async def enroll_person(
             faiss_position=position,
             role=role,
             notes=notes,
+            alert_email=alert_email.strip().lower() if alert_email else None,
             photo_url=photo_url,
         )
     except IntegrityError:

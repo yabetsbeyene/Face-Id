@@ -14,6 +14,7 @@ async def create_person(
     faiss_position: int,
     role: str | None = None,
     notes: str | None = None,
+    alert_email: str | None = None,
     photo_url: str | None = None,
     person_id: str | None = None,
 ) -> Person:
@@ -23,6 +24,7 @@ async def create_person(
         faiss_position=faiss_position,
         role=role,
         notes=notes,
+        alert_email=alert_email,
         photo_url=photo_url,
     )
     if person_id is not None:
@@ -46,6 +48,28 @@ async def get_person_by_id(db: AsyncSession, person_id: str) -> Person | None:
 async def list_people(db: AsyncSession, limit: int = 200) -> list[Person]:
     result = await db.execute(select(Person).order_by(Person.created_at.desc()).limit(limit))
     return list(result.scalars().all())
+
+
+async def update_person(db: AsyncSession, person: Person, *, person_code: str | None = None, full_name: str | None = None, role: str | None = None, notes: str | None = None, alert_email: str | None = None) -> Person:
+    if person_code is not None:
+        person.person_code = person_code
+    if full_name is not None:
+        person.full_name = full_name
+    if role is not None:
+        person.role = role
+    if notes is not None:
+        person.notes = notes
+    if alert_email is not None:
+        person.alert_email = alert_email
+
+    await db.commit()
+    await db.refresh(person)
+    return person
+
+
+async def delete_person(db: AsyncSession, person: Person) -> None:
+    await db.delete(person)
+    await db.commit()
 
 
 async def log_recognition(
