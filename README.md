@@ -95,7 +95,4 @@ normal Google password in this file. Restart the backend after changing
 records can be given one from the Directory management form. The default
 address is used as a fallback. Live detections are limited to one email per
 matched person per cooldown period.
-
-## Notes
-
-This is a demo MVP, not a production biometric system. It is good for learning, prototyping, and small-scale face matching, but it is not built for huge-scale identity deployment yet.
+ 
